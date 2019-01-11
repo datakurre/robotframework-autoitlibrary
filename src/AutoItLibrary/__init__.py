@@ -18,25 +18,27 @@ Purpose: Provides a Robot Framework keyword wrapper for the freeware AutoIt tool
          See the License for the specific language governing permissions and
          limitations under the License.
 """
-__author__  = "Martin Taylor <cmtaylor@ti.com>"
+__author__ = "Martin Taylor <cmtaylor@ti.com>"
 __version__ = "1.1"
 #
 # Import the libraries we need
 #
-import win32com.client                  # For COM interface to AutoIt
-import sys                              # For command line args
-import os                               # For file path manipulation
+import win32com.client  # For COM interface to AutoIt
+import sys  # For command line args
+import os  # For file path manipulation
 import types
 from . import Logger
 from . import Counter
-try :
-    from PIL import ImageGrab                    # For screen capture via Python Image Library (PIL)
-except :
+try:
+    from PIL import ImageGrab  # For screen capture via Python Image Library (PIL)
+except:
     ImageGrab = None
+
+
 #
 #-------------------------------------------------------------------------------
 #
-class AutoItLibrary(Logger.Logger, Counter.Counter) :
+class AutoItLibrary(Logger.Logger, Counter.Counter):
     """
     *AutoItLibrary* is a Robot Framework keyword library wrapper for for the freeware *AutoIt* tool
     (http://www.autoitscript.com/autoit3/index.shtml) using AutoIt's *AutoItX.dll* COM object. The
@@ -61,7 +63,7 @@ class AutoItLibrary(Logger.Logger, Counter.Counter) :
 
     ROBOT_LIBRARY_SCOPE = "GLOBAL"
 
-    def __init__(self, OutputDir=".", TimeOut=60, CaptureScreenOnError=False) :
+    def __init__(self, OutputDir=".", TimeOut=60, CaptureScreenOnError=False):
         """
         | OutputDir=<path>          | Output directory for captured screenshots. Should set to _${OUTPUTDIR}_ |
         | Timeout=<seconds>         | Default TimeOut value in seconds.                                       |
@@ -77,32 +79,37 @@ class AutoItLibrary(Logger.Logger, Counter.Counter) :
         # Make a connection to the AutoIt COM object
         #
         self._AutoIt = win32com.client.Dispatch("AutoItX3.Control")
+        self._AutoItCache = win32com.client.gencache.EnsureDispatch(
+            "AutoItX3.Control")
         #
         # Remember our input parameters
         #
-        self._OutputDir  = OutputDir
-        self._TimeOut    = int(TimeOut)
+        self._OutputDir = OutputDir
+        self._TimeOut = int(TimeOut)
         self._CaptureScreenOnError = CaptureScreenOnError
         #
         # Check that PIL is installed if CaptureScreenOnError is True
         #
-        if self._CaptureScreenOnError and ImageGrab == None :
-            self._warn("Python Imaging Library (PIL) is not installed, but is required for CaptureScreenOnError... set False")
+        if self._CaptureScreenOnError and ImageGrab == None:
+            self._warn(
+                "Python Imaging Library (PIL) is not installed, but is required for CaptureScreenOnError... set False"
+            )
             self._CaptureScreenOnError = False
         #
         # Set other properties
         #
-        self._my_kws     = None
+        self._my_kws = None
         self._AutoIt_kws = None
         #
         # Log our versions
         #
         self._info("AutoIt: Running %s" % (self.GetVersion()))
         self._info("AutoIt: Running %s" % (self.GetAutoItVersion()))
+
     #
     #-------------------------------------------------------------------------------
     #
-    def __getattr__(self, Name) :
+    def __getattr__(self, Name):
         """
         This bit of "Magic" makes all the AutoItX COM object methods appear as if they were methods of
         the AutoItLibrary class.  It relies on the fact that the AutoItLibrary installer ran the
@@ -112,11 +119,12 @@ class AutoItLibrary(Logger.Logger, Counter.Counter) :
         and here:
             http://docs.activestate.com/activepython/2.6/pywin32/html/com/win32com/HTML/GeneratedSupport.html
         """
-        if Name in self.__get_AutoIt_keywords() :
+        if Name in self.__get_AutoIt_keywords():
             retAttr = getattr(self._AutoIt, Name)
             return retAttr
-        else :
+        else:
             raise AttributeError(Name)
+
     #
     #-------------------------------------------------------------------------------
     #
@@ -124,11 +132,14 @@ class AutoItLibrary(Logger.Logger, Counter.Counter) :
         """
         Get the keywords implemented by the AutoItLibrary class.
         """
-        if self._my_kws is None :
-            self._my_kws = [ name for name in dir(self)
-                              if not name.startswith('_') and name != 'get_keyword_names'
-                              and type(getattr(self, name)) is types.MethodType ]
+        if self._my_kws is None:
+            self._my_kws = [
+                name for name in dir(self)
+                if not name.startswith('_') and name != 'get_keyword_names'
+                and type(getattr(self, name)) is types.MethodType
+            ]
         return self._my_kws
+
     #
     #-------------------------------------------------------------------------------
     #
@@ -137,20 +148,24 @@ class AutoItLibrary(Logger.Logger, Counter.Counter) :
         Get the keywords implemented by the underlying AutoItX COM object.
         """
         if self._AutoIt_kws is None:
-            self._AutoIt_kws = [ name for name in dir(self._AutoIt)
-                               if not name.startswith('_')
-                               and not name.lower() == "sleep"      # Don't include AutoIt's sleep method
-                               and type(getattr(self._AutoIt, name)) is types.MethodType ]
+            self._AutoIt_kws = [
+                name for name in dir(self._AutoItCache)
+                if not name.startswith('_') and not name.lower() ==
+                "sleep"  # Don't include AutoIt's sleep method
+                and type(getattr(self._AutoIt, name)) is types.MethodType
+            ]
         return self._AutoIt_kws
+
     #
     #-------------------------------------------------------------------------------
     #
-    def get_keyword_names(self) :
+    def get_keyword_names(self):
         """
         Return the list of keyword methods supported by this Robot Framework Test Engine which are its
         own native keywords plus the AutoIt keywords.
         """
         return self.__get_my_keywords() + self.__get_AutoIt_keywords()
+
     #
     #-------------------------------------------------------------------------------
     #
@@ -160,18 +175,20 @@ class AutoItLibrary(Logger.Logger, Counter.Counter) :
         """
         strVersion = "File: %s, Version: %s" % (__file__, __version__)
         return strVersion
+
     #
     #-------------------------------------------------------------------------------
     #
-    def GetAutoItVersion(self) :
+    def GetAutoItVersion(self):
         """
         Returns a string with the version of the AutoItX COM object.
         """
         return "AutoItX %s (COM object)" % self._AutoIt.version
+
     #
     #-------------------------------------------------------------------------------
     #
-    def GetActiveWindowImage(self, FilePath) :
+    def GetActiveWindowImage(self, FilePath):
         """
         Capture an image of the active window into the given _FilePath_.
         The given _FilePath_ must be relative to Robot Framework output directory,
@@ -180,13 +197,17 @@ class AutoItLibrary(Logger.Logger, Counter.Counter) :
         #
         # Check that PIL is installed
         #
-        if ImageGrab == None :
-            raise RuntimeError("Python Imaging Library (PIL) is not installed, but is required for GetActiveWindowImage")
+        if ImageGrab == None:
+            raise RuntimeError(
+                "Python Imaging Library (PIL) is not installed, but is required for GetActiveWindowImage"
+            )
         #
         # Check for a valid FilePath and make sure the directories exist
         #
         if FilePath and os.path.isabs(FilePath):
-            raise RuntimeError("Given FilePath='%s' must be relative to Robot outpudir" % FilePath)
+            raise RuntimeError(
+                "Given FilePath='%s' must be relative to Robot outpudir" %
+                FilePath)
         fullFilePath = os.path.join(self._OutputDir, FilePath)
         if not os.path.exists(os.path.split(fullFilePath)[0]):
             os.makedirs(os.path.split(fullFilePath)[0])
@@ -196,23 +217,25 @@ class AutoItLibrary(Logger.Logger, Counter.Counter) :
         #
         x = self._AutoIt.WinGetPosX("")
         y = self._AutoIt.WinGetPosY("")
-        width  = self._AutoIt.WinGetPosWidth("")
+        width = self._AutoIt.WinGetPosWidth("")
         height = self._AutoIt.WinGetPosHeight("")
-        bbox   = [x, y, x+width-1, y+height-1]
+        bbox = [x, y, x + width - 1, y + height - 1]
         #
         # Capture and save the screen image of the window
         #
-        GrabbedImage = ImageGrab.grab(bbox)     # store screenshot as "RGB" Image
-        GrabbedImage.save(fullFilePath)         # PIL evaluates extension
+        GrabbedImage = ImageGrab.grab(bbox)  # store screenshot as "RGB" Image
+        GrabbedImage.save(fullFilePath)  # PIL evaluates extension
         #
         # Embed the screenshot in the Robot Framework log file
         #
         self._html('<td></td></tr><tr><td colspan="3"><a href="%s">'
-                   '<img src="%s" width="700px"></a></td></tr>' % (FilePath, FilePath))
+                   '<img src="%s" width="700px"></a></td></tr>' % (FilePath,
+                                                                   FilePath))
+
     #
     #-------------------------------------------------------------------------------
     #
-    def GetScreenImage(self, FilePath) :
+    def GetScreenImage(self, FilePath):
         """
         Capture a full screen image into the given _FilePath_.
         The given _FilePath_ must be relative to Robot Framework output directory,
@@ -221,13 +244,17 @@ class AutoItLibrary(Logger.Logger, Counter.Counter) :
         #
         # Check that PIL is installed
         #
-        if ImageGrab == None :
-            raise RuntimeError("Python Imaging Library (PIL) is not installed, but is required for GetScreenImage")
+        if ImageGrab == None:
+            raise RuntimeError(
+                "Python Imaging Library (PIL) is not installed, but is required for GetScreenImage"
+            )
         #
         # Check for a valid FilePath and make sure the directories exist
         #
         if FilePath and os.path.isabs(FilePath):
-            raise RuntimeError("Given FilePath='%s' must be relative to Robot outpudir" % FilePath)
+            raise RuntimeError(
+                "Given FilePath='%s' must be relative to Robot outpudir" %
+                FilePath)
         fullFilePath = os.path.join(self._OutputDir, FilePath)
         if not os.path.exists(os.path.split(fullFilePath)[0]):
             os.makedirs(os.path.split(fullFilePath)[0])
@@ -235,17 +262,19 @@ class AutoItLibrary(Logger.Logger, Counter.Counter) :
         #
         # Capture and save the screen image of the whole screen
         #
-        GrabbedImage = ImageGrab.grab()     # store screenshot as "RGB" Image
-        GrabbedImage.save(fullFilePath)     # PIL evaluates extension
+        GrabbedImage = ImageGrab.grab()  # store screenshot as "RGB" Image
+        GrabbedImage.save(fullFilePath)  # PIL evaluates extension
         #
         # Embed the screenshot in the Robot Framework log file
         #
         self._html('<td></td></tr><tr><td colspan="3"><a href="%s">'
-                   '<img src="%s" width="700px"></a></td></tr>' % (FilePath, FilePath))
+                   '<img src="%s" width="700px"></a></td></tr>' % (FilePath,
+                                                                   FilePath))
+
     #
     #-------------------------------------------------------------------------------
     #
-    def Run(self, FileName, WorkingDir="", Flag="") :
+    def Run(self, FileName, WorkingDir="", Flag=""):
         """
         Direct wrapper for AutoIt's Run method.
 
@@ -253,24 +282,26 @@ class AutoItLibrary(Logger.Logger, Counter.Counter) :
         """
         self._infoKW(self.Run, FileName, WorkingDir, Flag)
 
-        if WorkingDir == "" and Flag == "" :
+        if WorkingDir == "" and Flag == "":
             cmd = "FileName='%s'" % FileName
             self._AutoIt.Run(FileName)
-        elif WorkingDir != "" and Flag == "" :
+        elif WorkingDir != "" and Flag == "":
             cmd = "FileName='%s', WorkingDir='%s'" % (FileName, WorkingDir)
             self._AutoIt.Run(FileName, WorkingDir)
-        else :
-            cmd = "FileName='%s', WorkingDir='%s', Flag='%s'" % (FileName, WorkingDir, Flag)
+        else:
+            cmd = "FileName='%s', WorkingDir='%s', Flag='%s'" % (
+                FileName, WorkingDir, Flag)
             self._AutoIt.Run(FileName, WorkingDir, Flag)
         #
         # Check the AutoIt error property
         #
-        if self._AutoIt.error == 1 :
+        if self._AutoIt.error == 1:
             raise Exception("Failed to run %s" % cmd)
+
     #
     #-------------------------------------------------------------------------------
     #
-    def WinWait(self, WindowTitle, WindowText="", TimeOut=-1) :
+    def WinWait(self, WindowTitle, WindowText="", TimeOut=-1):
         """
         Direct wrapper for AutoIt's WinWait method.
 
@@ -280,22 +311,24 @@ class AutoItLibrary(Logger.Logger, Counter.Counter) :
         #
         # Apply default TimeOut if not set
         #
-        if TimeOut == -1 :
+        if TimeOut == -1:
             TimeOut = self._TimeOut
         self._infoKW(self.WinWait, WindowTitle, WindowText, TimeOut)
         #
         # Do the AutoIt call and handle failure result
         #
         Result = self._AutoIt.WinWait(WindowTitle, WindowText, TimeOut)
-        if Result == 0 :
-            Result = "Window '%s' (%s) failed to appear in %s seconds" % (WindowTitle, WindowText, TimeOut)
-            if self._CaptureScreenOnError :
+        if Result == 0:
+            Result = "Window '%s' (%s) failed to appear in %s seconds" % (
+                WindowTitle, WindowText, TimeOut)
+            if self._CaptureScreenOnError:
                 self.GetScreenImage("FAIL_WinWait_%d.png" % self._next())
             raise Exception(Result)
+
     #
     #-------------------------------------------------------------------------------
     #
-    def WinWaitActive(self, WindowTitle, WindowText="", TimeOut=-1) :
+    def WinWaitActive(self, WindowTitle, WindowText="", TimeOut=-1):
         """
         Direct wrapper for AutoIt's WinWaitActive method.
 
@@ -305,22 +338,24 @@ class AutoItLibrary(Logger.Logger, Counter.Counter) :
         #
         # Apply default TimeOut if not set
         #
-        if TimeOut == -1 :
+        if TimeOut == -1:
             TimeOut = self._TimeOut
         self._infoKW(self.WinWaitActive, WindowTitle, WindowText, TimeOut)
         #
         # Do the AutoIt call and handle failure result
         #
         Result = self._AutoIt.WinWaitActive(WindowTitle, WindowText, TimeOut)
-        if Result == 0 :
-            Result = "Window '%s' (%s) failed to be active in %s seconds" % (WindowTitle, WindowText, TimeOut)
-            if self._CaptureScreenOnError :
+        if Result == 0:
+            Result = "Window '%s' (%s) failed to be active in %s seconds" % (
+                WindowTitle, WindowText, TimeOut)
+            if self._CaptureScreenOnError:
                 self.GetScreenImage("FAIL_WinWaitActive_%d.png" % self._next())
             raise Exception(Result)
+
     #
     #-------------------------------------------------------------------------------
     #
-    def WinWaitClose(self, WindowTitle, WindowText="", TimeOut=-1) :
+    def WinWaitClose(self, WindowTitle, WindowText="", TimeOut=-1):
         """
         Direct wrapper for AutoIt's WinWaitClose method.
 
@@ -330,22 +365,24 @@ class AutoItLibrary(Logger.Logger, Counter.Counter) :
         #
         # Apply default TimeOut if not set
         #
-        if TimeOut == -1 :
+        if TimeOut == -1:
             TimeOut = self._TimeOut
         self._infoKW(self.WinWaitClose, WindowTitle, WindowText, TimeOut)
         #
         # Do the AutoIt call and handle failure result
         #
         Result = self._AutoIt.WinWaitClose(WindowTitle, WindowText, TimeOut)
-        if Result == 0 :
-            Result = "Window '%s' (%s) failed to close in %s seconds" % (WindowTitle, WindowText, TimeOut)
-            if self._CaptureScreenOnError :
+        if Result == 0:
+            Result = "Window '%s' (%s) failed to close in %s seconds" % (
+                WindowTitle, WindowText, TimeOut)
+            if self._CaptureScreenOnError:
                 self.GetScreenImage("FAIL_WinWaitClose_%d.png" % self._next())
             raise Exception(Result)
+
     #
     #-------------------------------------------------------------------------------
     #
-    def WaitForActiveWindow(self, WindowTitle, WindowText="", TimeOut=-1) :
+    def WaitForActiveWindow(self, WindowTitle, WindowText="", TimeOut=-1):
         """
         Wait up to _TimeOut_ seconds for the window with the given _WindowTitle_ and optional
         _WindowText_ to appear. Force this to be the active window after it appears.  Optionally do a
@@ -356,7 +393,8 @@ class AutoItLibrary(Logger.Logger, Counter.Counter) :
         | [WindowText=<string>] | Optional text on the window expected to appear          |
         | [TimeOut=<seconds>]   | Optional overide to the default timeout set in __init__ |
         """
-        self._infoKW(self.WaitForActiveWindow, WindowTitle, WindowText, TimeOut)
+        self._infoKW(self.WaitForActiveWindow, WindowTitle, WindowText,
+                     TimeOut)
         #
         # Wait for the window to be up
         #
@@ -364,9 +402,11 @@ class AutoItLibrary(Logger.Logger, Counter.Counter) :
         #
         # Force the window to be active
         #
-        if not self._AutoIt.WinActive(WindowTitle, WindowText) :
+        if not self._AutoIt.WinActive(WindowTitle, WindowText):
             self._AutoIt.WinActivate(WindowTitle, WindowText)
 
         self.WinWaitActive(WindowTitle, WindowText, TimeOut)
+
+
 #
 # -------------------------------- End of file --------------------------------
